@@ -24,7 +24,12 @@ const Products: React.FC = () => {
     const loadProducts = async () => {
       try {
         const response = await api.get('/products');
-        const allProducts = response.products || response;
+        console.log('Products API response:', response);
+        
+        // Backend returns {products: [...], pagination: {...}}
+        const allProducts = response.products || [];
+        console.log('Extracted products:', allProducts);
+        
         setProducts(allProducts);
         setFilteredProducts(allProducts);
       } catch (error) {

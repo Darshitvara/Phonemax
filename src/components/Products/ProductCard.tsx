@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Star, ShoppingCart, Heart, Eye, Zap } from 'lucide-react';
+import { Star, ShoppingCart, Heart, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Product } from '../../types';
 import { useCart } from '../../contexts/CartContext';
@@ -128,74 +128,80 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index = 0, viewMode 
       transition={{ duration: 0.5, delay: index * 0.05 }}
       className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 group"
     >
-      <div className="relative overflow-hidden">
-        <img
-          src={product.images[0]}
-          alt={product.name}
-          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-        />
-        <div className="absolute top-2 right-2 space-y-2">
-          <button
-            onClick={handleWishlistToggle}
-            className="p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors"
-          >
-            <Heart className={`w-4 h-4 ${isInWishlist(product.id) ? 'text-red-500 fill-current' : 'text-gray-600'}`} />
-          </button>
-          <Link
-            to={`/products/${product.id}`}
-            className="p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors block"
-          >
-            <Eye className="w-4 h-4 text-gray-600" />
-          </Link>
-        </div>
+      <Link to={`/products/${product.id}`} className="block">
+        <div className="relative overflow-hidden">
+          <img
+            src={product.images[0]}
+            alt={product.name}
+            className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+          <div className="absolute top-2 right-2 space-y-2">
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleWishlistToggle();
+              }}
+              className="p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors"
+            >
+              <Heart className={`w-4 h-4 ${isInWishlist(product.id) ? 'text-red-500 fill-current' : 'text-gray-600'}`} />
+            </button>
+          </div>
         {product.originalPrice && (
           <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded-md text-sm font-semibold">
             Save ${product.originalPrice - product.price}
           </div>
         )}
-      </div>
-
-      <div className="p-4">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-1">{product.name}</h3>
-        <p className="text-gray-600 text-sm mb-3 line-clamp-2">{product.description}</p>
-        
-        <div className="flex items-center mb-3">
-          <div className="flex items-center">
-            {[...Array(5)].map((_, i) => (
-              <Star
-                key={i}
-                className={`w-4 h-4 ${
-                  i < Math.floor(product.rating)
-                    ? 'text-yellow-400 fill-current'
-                    : 'text-gray-300'
-                }`}
-              />
-            ))}
-          </div>
-          <span className="text-sm text-gray-500 ml-2">
-            ({product.reviews.length})
-          </span>
         </div>
 
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-2">
-            <span className="text-xl font-bold text-gray-900">${product.price}</span>
-            {product.originalPrice && (
-              <span className="text-sm text-gray-500 line-through">
-                ${product.originalPrice}
-              </span>
-            )}
+        <div className="p-4">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-1">{product.name}</h3>
+          <p className="text-gray-600 text-sm mb-3 line-clamp-2">{product.description}</p>
+          
+          <div className="flex items-center mb-3">
+            <div className="flex items-center">
+              {[...Array(5)].map((_, i) => (
+                <Star
+                  key={i}
+                  className={`w-4 h-4 ${
+                    i < Math.floor(product.rating)
+                      ? 'text-yellow-400 fill-current'
+                      : 'text-gray-300'
+                  }`}
+                />
+              ))}
+            </div>
+            <span className="text-sm text-gray-500 ml-2">
+              ({product.reviews.length})
+            </span>
           </div>
-          <span className={`text-sm font-medium ${
-            product.stock > 0 ? 'text-green-600' : 'text-red-600'
-          }`}>
-            {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
-          </span>
-        </div>
 
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-2">
+              <span className="text-xl font-bold text-gray-900">${product.price}</span>
+              {product.originalPrice && (
+                <span className="text-sm text-gray-500 line-through">
+                  ${product.originalPrice}
+                </span>
+              )}
+            </div>
+            <span className={`text-sm font-medium ${
+              product.stock > 0 ? 'text-green-600' : 'text-red-600'
+            }`}>
+              {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
+            </span>
+          </div>
+        </div>
+      </Link>
+
+      <div className="px-4 pb-4">
         <div className="flex space-x-2">
           <button
-            onClick={handleAddToCart}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleAddToCart();
+            }}
             disabled={product.stock === 0}
             className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 px-4 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center space-x-2"
           >
@@ -204,6 +210,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index = 0, viewMode 
           </button>
           <Link
             to={`/buy-now/${product.id}`}
+            onClick={(e) => e.stopPropagation()}
             className="px-4 py-2 border border-blue-600 text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition-colors flex items-center justify-center"
           >
             <Zap className="w-4 h-4" />

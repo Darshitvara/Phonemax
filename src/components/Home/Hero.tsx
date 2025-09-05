@@ -1,9 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Star, Shield, Truck, Play, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import ComingSoonModal from '../Modals/ComingSoonModal';
 
 const Hero: React.FC = () => {
+  const [showComingSoonModal, setShowComingSoonModal] = useState(false);
+
+  const handleWatchDemo = () => {
+    setShowComingSoonModal(true);
+  };
+
   return (
     <section className="relative bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 overflow-hidden min-h-screen flex items-center">
       {/* Background Elements */}
@@ -65,7 +72,10 @@ const Hero: React.FC = () => {
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
               
-              <button className="group inline-flex items-center justify-center px-8 py-4 bg-white/90 backdrop-blur-sm text-gray-700 font-semibold rounded-xl shadow-lg hover:shadow-xl hover:bg-white transition-all duration-200">
+              <button 
+                onClick={handleWatchDemo}
+                className="group inline-flex items-center justify-center px-8 py-4 bg-white/90 backdrop-blur-sm text-gray-700 font-semibold rounded-xl shadow-lg hover:shadow-xl hover:bg-white transition-all duration-200"
+              >
                 <Play className="mr-2 w-5 h-5 text-blue-600" />
                 <span>Watch Demo</span>
               </button>
@@ -191,6 +201,12 @@ const Hero: React.FC = () => {
           </motion.div>
         </motion.div>
       </div>
+      
+      {/* Coming Soon Modal */}
+      <ComingSoonModal 
+        isOpen={showComingSoonModal} 
+        onClose={() => setShowComingSoonModal(false)} 
+      />
     </section>
   );
 };

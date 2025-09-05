@@ -6,6 +6,7 @@ import { useNotifications } from '../contexts/NotificationContext';
 import { useAuth } from '../contexts/AuthContext';
 import ConfirmDialog from '../components/UI/ConfirmDialog';
 import ProductEditModal from '../components/Admin/ProductEditModal';
+import ProductCreateModal from '../components/Admin/ProductCreateModal';
 import { Product } from '../types';
 
 const AdminProducts: React.FC = () => {
@@ -127,6 +128,39 @@ const AdminProducts: React.FC = () => {
         type: 'error',
         title: 'Update Failed',
         message: `Failed to update "${editingProduct.name}". Please try again.`,
+        duration: 5000
+      });
+    }
+  };
+
+  const handleCreateProduct = async (productData: any) => {
+    try {
+      const response = await api.post('/products', productData);
+      console.log('Create response:', response); // Debug log
+      
+      // The api client returns data directly, not wrapped in .data
+      const newProduct = response.product || response;
+      
+      // Add the new product to the list
+      setProducts(prevProducts => [...prevProducts, newProduct]);
+      
+      // Success notification
+      addNotification({
+        type: 'success',
+        title: 'Product Created',
+        message: `"${productData.name}" has been successfully added to your store.`,
+        duration: 4000
+      });
+
+      setShowCreateForm(false);
+    } catch (error) {
+      console.error('Error creating product:', error);
+      
+      // Error notification
+      addNotification({
+        type: 'error',
+        title: 'Creation Failed',
+        message: `Failed to create "${productData.name}". Please try again.`,
         duration: 5000
       });
     }
@@ -354,6 +388,14 @@ const AdminProducts: React.FC = () => {
           product={editingProduct}
           onClose={() => setEditingProduct(null)}
           onSave={handleEditProduct}
+        />
+      )}
+
+      {/* Product Create Modal */}
+      {showCreateForm && (
+        <ProductCreateModal
+          onClose={() => setShowCreateForm(false)}
+          onSave={handleCreateProduct}
         />
       )}
     </div>

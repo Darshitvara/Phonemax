@@ -2,11 +2,14 @@ import React, { createContext, useContext, useReducer, useEffect, ReactNode } fr
 import { api, setAuthToken, removeAuthToken } from '../utils/api';
 import { User, AuthState } from '../types';
 
-interface AuthContextType extends AuthState {
+interface AuthContextType {
+  user: User | null;
+  isAuthenticated: boolean;
+  loading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   register: (userData: Partial<User> & { password: string }) => Promise<boolean>;
   logout: () => void;
-  updateProfile: (userData: Partial<User>) => void;
+  updateProfile: (userData: Partial<User>) => Promise<void>;
   makeAdmin: () => Promise<boolean>;
 }
 
@@ -111,15 +114,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     dispatch({ type: 'LOGOUT' });
   };
 
-  const updateProfile = (userData: Partial<User>) => {
+  const updateProfile = async (userData: Partial<User>): Promise<void> => {
     if (state.user) {
-      api.put('/auth/profile', userData)
-        .then(updatedUser => {
-          dispatch({ type: 'UPDATE_PROFILE', payload: updatedUser });
-        })
-        .catch(error => {
-          console.error('Profile update error:', error);
-        });
+      try {
+        const response = await api.put('/auth/profile', userData);
+        dispatch({ type: 'UPDATE_PROFILE', payload: response.user });
+      } catch (error) {
+        console.error('Profile update error:', error);
+        throw error;
+      }
     }
   };
 

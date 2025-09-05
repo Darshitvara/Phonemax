@@ -79,10 +79,16 @@ exports.getAllProducts = async (req, res) => {
     const total = await Product.countDocuments(filter);
     
     // Transform products to include id field for frontend compatibility
-    const transformedProducts = products.map(product => ({
-      ...product.toObject(),
-      id: product._id.toString()
-    }));
+    const transformedProducts = products.map(product => {
+      const productObj = product.toObject();
+      const transformed = {
+        ...productObj,
+        id: product._id.toString()
+      };
+      // Remove _id field to avoid confusion
+      delete transformed._id;
+      return transformed;
+    });
     
     res.json({
       products: transformedProducts,
@@ -109,11 +115,15 @@ exports.getProductById = async (req, res) => {
       return res.status(404).json({ message: 'Product not found' });
     }
     
-    // Transform product to include id field
+    // Transform product to include id field and remove _id
+    const productObj = product.toObject();
     const transformedProduct = {
-      ...product.toObject(),
+      ...productObj,
       id: product._id.toString()
     };
+    
+    // Remove _id field to avoid confusion
+    delete transformedProduct._id;
     
     res.json(transformedProduct);
   } catch (err) {

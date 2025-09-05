@@ -9,6 +9,7 @@ import NotificationContainer from './components/Notifications/NotificationContai
 const Home = lazy(() => import('./pages/Home'));
 const About = lazy(() => import('./pages/About'));
 const Products = lazy(() => import('./pages/Products'));
+const ProductDetails = lazy(() => import('./pages/ProductDetails'));
 const Cart = lazy(() => import('./pages/Cart'));
 const Checkout = lazy(() => import('./pages/Checkout'));
 const BuyNow = lazy(() => import('./pages/BuyNow'));
@@ -17,6 +18,7 @@ const Orders = lazy(() => import('./pages/Orders'));
 const OrderConfirmation = lazy(() => import('./pages/OrderConfirmation'));
 const TrackOrder = lazy(() => import('./pages/TrackOrder'));
 const Contact = lazy(() => import('./pages/Contact'));
+const UserProfile = lazy(() => import('./pages/UserProfile'));
 const LoginForm = lazy(() => import('./components/Auth/LoginForm'));
 const RegisterForm = lazy(() => import('./components/Auth/RegisterForm'));
 const AdminProducts = lazy(() => import('./pages/AdminProducts'));
@@ -38,6 +40,7 @@ function App() {
               <Route index element={<Home />} />
               <Route path="about" element={<About />} />
               <Route path="products" element={<Products />} />
+              <Route path="products/:id" element={<ProductDetails />} />
               <Route path="cart" element={<Cart />} />
               <Route path="checkout" element={<Checkout />} />
               <Route path="buy-now/:productId" element={<BuyNow />} />
@@ -46,6 +49,7 @@ function App() {
               <Route path="order-confirmation/:orderId" element={<OrderConfirmation />} />
               <Route path="track-order/:orderId" element={<TrackOrder />} />
               <Route path="contact" element={<Contact />} />
+              <Route path="profile" element={<UserProfile />} />
               <Route path="admin/products" element={
                 <AdminRoute>
                   <AdminProducts />
