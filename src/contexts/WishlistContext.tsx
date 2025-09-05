@@ -26,7 +26,7 @@ type WishlistAction =
 const wishlistReducer = (state: WishlistState, action: WishlistAction): WishlistState => {
   switch (action.type) {
     case 'ADD_TO_WISHLIST': {
-      const exists = state.items.find(item => item.id === action.payload.id);
+      const exists = state.items.find(item => item && item.id === action.payload.id);
       if (exists) return state;
       
       const newItems = [...state.items, action.payload];
@@ -34,15 +34,18 @@ const wishlistReducer = (state: WishlistState, action: WishlistAction): Wishlist
     }
     
     case 'REMOVE_FROM_WISHLIST': {
-      const newItems = state.items.filter(item => item.id !== action.payload);
+      const newItems = state.items.filter(item => item && item.id !== action.payload);
       return { items: newItems, itemCount: newItems.length };
     }
     
     case 'CLEAR_WISHLIST':
       return { items: [], itemCount: 0 };
     
-    case 'LOAD_WISHLIST':
-      return { items: action.payload, itemCount: action.payload.length };
+    case 'LOAD_WISHLIST': {
+      // Filter out any null/undefined items
+      const validItems = action.payload.filter(item => item != null);
+      return { items: validItems, itemCount: validItems.length };
+    }
     
     default:
       return state;
@@ -120,7 +123,7 @@ export const WishlistProvider: React.FC<{ children: ReactNode }> = ({ children }
   };
 
   const isInWishlist = (productId: string) => {
-    return state.items.some(item => item.id === productId);
+    return state.items.some(item => item && item.id === productId);
   };
 
   const clearWishlist = () => {

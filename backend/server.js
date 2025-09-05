@@ -26,7 +26,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/orders', orderRoutes);
-app.use('/auth', authRoutes);
+app.use('/api/auth', authRoutes);
 
 // Basic Route
 app.get('/', (req, res) => {

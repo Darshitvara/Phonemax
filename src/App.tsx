@@ -19,6 +19,8 @@ const TrackOrder = lazy(() => import('./pages/TrackOrder'));
 const Contact = lazy(() => import('./pages/Contact'));
 const LoginForm = lazy(() => import('./components/Auth/LoginForm'));
 const RegisterForm = lazy(() => import('./components/Auth/RegisterForm'));
+const AdminProducts = lazy(() => import('./pages/AdminProducts'));
+const AdminRoute = lazy(() => import('./components/Auth/AdminRoute'));
 
 function App() {
   useEffect(() => {
@@ -44,6 +46,11 @@ function App() {
               <Route path="order-confirmation/:orderId" element={<OrderConfirmation />} />
               <Route path="track-order/:orderId" element={<TrackOrder />} />
               <Route path="contact" element={<Contact />} />
+              <Route path="admin/products" element={
+                <AdminRoute>
+                  <AdminProducts />
+                </AdminRoute>
+              } />
             </Route>
           </Routes>
         </Suspense>

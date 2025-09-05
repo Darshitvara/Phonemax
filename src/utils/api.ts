@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'http://localhost:5001/api';
 
 // Get auth token from localStorage
 const getAuthToken = (): string | null => {
@@ -30,7 +30,7 @@ class ApiClient {
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
-        ...(token && { 'x-auth-token': token }),
+        ...(token && { 'Authorization': `Bearer ${token}` }),
         ...options.headers,
       },
       ...options,
@@ -65,6 +65,13 @@ class ApiClient {
   async put(endpoint: string, data: any): Promise<any> {
     return this.request(endpoint, {
       method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async patch(endpoint: string, data: any): Promise<any> {
+    return this.request(endpoint, {
+      method: 'PATCH',
       body: JSON.stringify(data),
     });
   }

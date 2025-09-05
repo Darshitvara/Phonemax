@@ -23,4 +23,9 @@ router.get('/me', auth, authController.getMe);
 // @access  Private
 router.put('/profile', auth, authController.updateProfile);
 
+// @route   POST /auth/make-admin
+// @desc    Promote user to admin (temporary for development)
+// @access  Private
+router.post('/make-admin', auth, authController.makeAdmin);
+
 module.exports = router;

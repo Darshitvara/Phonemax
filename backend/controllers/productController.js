@@ -1,6 +1,8 @@
 const Product = require('../models/Product');
 
-// Get all products with filtering and pagination
+// @desc    Get all products with filtering and pagination
+// @route   GET /api/products
+// @access  Public
 exports.getAllProducts = async (req, res) => {
   try {
     const {
@@ -44,6 +46,9 @@ exports.getAllProducts = async (req, res) => {
       filter.featured = true;
     }
 
+    // Only show products that are in stock
+    filter.stock = { $gt: 0 };
+
     // Build sort object
     let sort = {};
     switch (sortBy) {
@@ -73,8 +78,14 @@ exports.getAllProducts = async (req, res) => {
     
     const total = await Product.countDocuments(filter);
     
+    // Transform products to include id field for frontend compatibility
+    const transformedProducts = products.map(product => ({
+      ...product.toObject(),
+      id: product._id.toString()
+    }));
+    
     res.json({
-      products,
+      products: transformedProducts,
       pagination: {
         currentPage: Number(page),
         totalPages: Math.ceil(total / limit),
@@ -98,7 +109,13 @@ exports.getProductById = async (req, res) => {
       return res.status(404).json({ message: 'Product not found' });
     }
     
-    res.json(product);
+    // Transform product to include id field
+    const transformedProduct = {
+      ...product.toObject(),
+      id: product._id.toString()
+    };
+    
+    res.json(transformedProduct);
   } catch (err) {
     console.error(err.message);
     if (err.kind === 'ObjectId') {
@@ -111,11 +128,217 @@ exports.getProductById = async (req, res) => {
 // Get featured products
 exports.getFeaturedProducts = async (req, res) => {
   try {
-    const products = await Product.find({ featured: true }).limit(8);
-    res.json(products);
+    const products = await Product.find({ 
+      featured: true, 
+      stock: { $gt: 0 } // Only show featured products that are in stock
+    }).limit(8);
+    
+    // Transform products to include id field
+    const transformedProducts = products.map(product => ({
+      ...product.toObject(),
+      id: product._id.toString()
+    }));
+    
+    res.json(transformedProducts);
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
+  }
+};
+
+// @desc    Create a new product (Admin only)
+// @route   POST /api/products
+// @access  Private/Admin
+exports.createProduct = async (req, res) => {
+  try {
+    const {
+      name,
+      brand,
+      price,
+      originalPrice,
+      description,
+      images,
+      specifications,
+      category,
+      subcategory,
+      stock,
+      featured
+    } = req.body;
+
+    // Validation
+    if (!name || !brand || !price || !description || !images || !category || !subcategory || stock === undefined) {
+      return res.status(400).json({ 
+        message: 'Please provide all required fields: name, brand, price, description, images, category, subcategory, stock' 
+      });
+    }
+
+    if (!Array.isArray(images) || images.length === 0) {
+      return res.status(400).json({ message: 'At least one product image is required' });
+    }
+
+    const product = new Product({
+      name,
+      brand,
+      price,
+      originalPrice,
+      description,
+      images,
+      specifications,
+      category,
+      subcategory,
+      stock,
+      featured: featured || false
+    });
+
+    const savedProduct = await product.save();
+    
+    // Transform product to include id field
+    const transformedProduct = {
+      ...savedProduct.toObject(),
+      id: savedProduct._id.toString()
+    };
+    
+    res.status(201).json({
+      message: 'Product created successfully',
+      product: transformedProduct
+    });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ message: 'Server error while creating product' });
+  }
+};
+
+// @desc    Update a product (Admin only)
+// @route   PUT /api/products/:id
+// @access  Private/Admin
+exports.updateProduct = async (req, res) => {
+  try {
+    console.log('Update product request:', {
+      id: req.params.id,
+      body: req.body,
+      user: req.user?.email,
+      userRole: req.user?.role
+    });
+
+    const {
+      name,
+      brand,
+      price,
+      originalPrice,
+      description,
+      images,
+      specifications,
+      category,
+      subcategory,
+      stock,
+      featured
+    } = req.body;
+
+    const product = await Product.findById(req.params.id);
+    
+    if (!product) {
+      console.log('Product not found with ID:', req.params.id);
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    console.log('Found product:', product.name);
+
+    // Update fields
+    if (name) product.name = name;
+    if (brand) product.brand = brand;
+    if (price !== undefined) product.price = price;
+    if (originalPrice !== undefined) product.originalPrice = originalPrice;
+    if (description) product.description = description;
+    if (images) product.images = images;
+    if (specifications) product.specifications = specifications;
+    if (category) product.category = category;
+    if (subcategory) product.subcategory = subcategory;
+    if (stock !== undefined) product.stock = stock;
+    if (featured !== undefined) product.featured = featured;
+
+    const updatedProduct = await product.save();
+    console.log('Product updated successfully:', updatedProduct.name);
+    
+    // Transform product to include id field
+    const transformedProduct = {
+      ...updatedProduct.toObject(),
+      id: updatedProduct._id.toString()
+    };
+    
+    res.json({
+      message: 'Product updated successfully',
+      product: transformedProduct
+    });
+  } catch (err) {
+    console.error('Error updating product:', err);
+    if (err.kind === 'ObjectId') {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+    res.status(500).json({ message: 'Server error while updating product' });
+  }
+};
+
+// @desc    Delete a product (Admin only)
+// @route   DELETE /api/products/:id
+// @access  Private/Admin
+exports.deleteProduct = async (req, res) => {
+  try {
+    console.log('Attempting to delete product with ID:', req.params.id);
+    const product = await Product.findById(req.params.id);
+    
+    if (!product) {
+      console.log('Product not found in database');
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    console.log('Product found, deleting:', product.name);
+    await Product.findByIdAndDelete(req.params.id);
+    console.log('Product deleted successfully');
+    res.json({ message: 'Product deleted successfully' });
+  } catch (err) {
+    console.error('Delete product error:', err.message);
+    if (err.kind === 'ObjectId') {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+    res.status(500).json({ message: 'Server error while deleting product' });
+  }
+};
+
+// @desc    Update product stock (Admin only)
+// @route   PATCH /api/products/:id/stock
+// @access  Private/Admin
+exports.updateStock = async (req, res) => {
+  try {
+    const { stock } = req.body;
+    
+    if (stock === undefined || stock < 0) {
+      return res.status(400).json({ message: 'Valid stock quantity is required' });
+    }
+
+    const product = await Product.findById(req.params.id);
+    
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    product.stock = stock;
+    await product.save();
+
+    res.json({
+      message: 'Stock updated successfully',
+      product: {
+        _id: product._id,
+        id: product._id.toString(),
+        name: product.name,
+        stock: product.stock
+      }
+    });
+  } catch (err) {
+    console.error(err.message);
+    if (err.kind === 'ObjectId') {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+    res.status(500).json({ message: 'Server error while updating stock' });
   }
 };
 

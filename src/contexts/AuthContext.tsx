@@ -7,6 +7,7 @@ interface AuthContextType extends AuthState {
   register: (userData: Partial<User> & { password: string }) => Promise<boolean>;
   logout: () => void;
   updateProfile: (userData: Partial<User>) => void;
+  makeAdmin: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -122,6 +123,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const makeAdmin = async (): Promise<boolean> => {
+    try {
+      const response = await api.post('/auth/make-admin', {});
+      dispatch({ type: 'UPDATE_PROFILE', payload: response.user });
+      return true;
+    } catch (error) {
+      console.error('Make admin error:', error);
+      return false;
+    }
+  };
+
   return (
     <AuthContext.Provider value={{
       ...state,
@@ -129,6 +141,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       register,
       logout,
       updateProfile,
+      makeAdmin
     }}>
       {children}
     </AuthContext.Provider>

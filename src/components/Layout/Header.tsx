@@ -148,12 +148,12 @@ const Header: React.FC = () => {
                         </Link>
                         {user?.role === 'admin' && (
                           <Link
-                            to="/admin"
+                            to="/admin/products"
                             className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                             onClick={() => setIsUserMenuOpen(false)}
                           >
                             <Settings className="w-4 h-4" />
-                            <span>Admin Dashboard</span>
+                            <span>Manage Products</span>
                           </Link>
                         )}
                         <hr className="my-1" />
