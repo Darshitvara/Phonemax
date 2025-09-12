@@ -5,6 +5,8 @@ import { Link } from 'react-router-dom';
 import { Product } from '../../types';
 import { useCart } from '../../contexts/CartContext';
 import { useWishlist } from '../../contexts/WishlistContext';
+import { useProtectedAction } from '../../hooks/useProtectedAction';
+import LoginPromptModal from '../Modals/LoginPromptModal';
 
 interface ProductCardProps {
   product: Product;
@@ -15,17 +17,34 @@ interface ProductCardProps {
 const ProductCard: React.FC<ProductCardProps> = ({ product, index = 0, viewMode = 'grid' }) => {
   const { addToCart } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
+  const { 
+    requireAuth, 
+    showLoginModal, 
+    loginMessage, 
+    handleLoginRedirect, 
+    handleModalClose 
+  } = useProtectedAction();
 
   const handleAddToCart = () => {
-    addToCart(product);
+    requireAuth(
+      () => addToCart(product),
+      `Add ${product.name} to your cart and continue shopping with ease!`
+    );
   };
 
   const handleWishlistToggle = () => {
-    if (isInWishlist(product.id)) {
-      removeFromWishlist(product.id);
-    } else {
-      addToWishlist(product);
-    }
+    const action = () => {
+      if (isInWishlist(product.id)) {
+        removeFromWishlist(product.id);
+      } else {
+        addToWishlist(product);
+      }
+    };
+
+    requireAuth(
+      action,
+      `Save ${product.name} to your wishlist so you never lose track of your favorite items!`
+    );
   };
 
   if (viewMode === 'list') {
@@ -217,6 +236,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index = 0, viewMode 
           </Link>
         </div>
       </div>
+
+      {/* Login Prompt Modal */}
+      <LoginPromptModal
+        isOpen={showLoginModal}
+        onClose={handleModalClose}
+        onLogin={handleLoginRedirect}
+        message={loginMessage}
+      />
     </motion.div>
   );
 };

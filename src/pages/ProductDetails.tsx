@@ -17,6 +17,8 @@ import {
 import { Product } from '../types';
 import { useCart } from '../contexts/CartContext';
 import { useWishlist } from '../contexts/WishlistContext';
+import { useProtectedAction } from '../hooks/useProtectedAction';
+import LoginPromptModal from '../components/Modals/LoginPromptModal';
 import { api } from '../utils/api';
 
 const ProductDetails: React.FC = () => {
@@ -24,6 +26,13 @@ const ProductDetails: React.FC = () => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
+  const { 
+    requireAuth, 
+    showLoginModal, 
+    loginMessage, 
+    handleLoginRedirect, 
+    handleModalClose 
+  } = useProtectedAction();
   
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -67,26 +76,41 @@ const ProductDetails: React.FC = () => {
 
   const handleAddToCart = () => {
     if (product) {
-      for (let i = 0; i < quantity; i++) {
-        addToCart(product);
-      }
+      requireAuth(
+        () => {
+          for (let i = 0; i < quantity; i++) {
+            addToCart(product);
+          }
+        },
+        `Add ${quantity} ${product.name}${quantity > 1 ? 's' : ''} to your cart and checkout securely!`
+      );
     }
   };
 
   const handleWishlistToggle = () => {
     if (!product) return;
     
-    if (isInWishlist(product.id)) {
-      removeFromWishlist(product.id);
-    } else {
-      addToWishlist(product);
-    }
+    requireAuth(
+      () => {
+        if (isInWishlist(product.id)) {
+          removeFromWishlist(product.id);
+        } else {
+          addToWishlist(product);
+        }
+      },
+      `Save ${product.name} to your wishlist and never miss out on this amazing product!`
+    );
   };
 
   const handleBuyNow = () => {
     if (product) {
-      handleAddToCart();
-      navigate(`/buy-now/${product.id}`);
+      requireAuth(
+        () => {
+          handleAddToCart();
+          navigate(`/buy-now/${product.id}`);
+        },
+        `Buy ${product.name} now and get it delivered to your doorstep quickly!`
+      );
     }
   };
 
@@ -378,6 +402,14 @@ const ProductDetails: React.FC = () => {
           </motion.div>
         </div>
       </div>
+
+      {/* Login Prompt Modal */}
+      <LoginPromptModal
+        isOpen={showLoginModal}
+        onClose={handleModalClose}
+        onLogin={handleLoginRedirect}
+        message={loginMessage}
+      />
     </div>
   );
 };

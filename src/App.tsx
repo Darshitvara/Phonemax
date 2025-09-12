@@ -20,9 +20,11 @@ const TrackOrder = lazy(() => import('./pages/TrackOrder'));
 const Contact = lazy(() => import('./pages/Contact'));
 const UserProfile = lazy(() => import('./pages/UserProfile'));
 const LoginForm = lazy(() => import('./components/Auth/LoginForm'));
+// const LoginForm = import( './components/Auth/LoginForm') ;
 const RegisterForm = lazy(() => import('./components/Auth/RegisterForm'));
 const AdminProducts = lazy(() => import('./pages/AdminProducts'));
 const AdminRoute = lazy(() => import('./components/Auth/AdminRoute'));
+const ProtectedRoute = lazy(() => import('./components/Auth/ProtectedRoute'));
 
 function App() {
   useEffect(() => {
@@ -41,15 +43,47 @@ function App() {
               <Route path="about" element={<About />} />
               <Route path="products" element={<Products />} />
               <Route path="products/:id" element={<ProductDetails />} />
-              <Route path="cart" element={<Cart />} />
-              <Route path="checkout" element={<Checkout />} />
-              <Route path="buy-now/:productId" element={<BuyNow />} />
-              <Route path="wishlist" element={<Wishlist />} />
-              <Route path="orders" element={<Orders />} />
-              <Route path="order-confirmation/:orderId" element={<OrderConfirmation />} />
-              <Route path="track-order/:orderId" element={<TrackOrder />} />
+              <Route path="cart" element={
+                <ProtectedRoute>
+                  <Cart />
+                </ProtectedRoute>
+              } />
+              <Route path="checkout" element={
+                <ProtectedRoute>
+                  <Checkout />
+                </ProtectedRoute>
+              } />
+              <Route path="buy-now/:productId" element={
+                <ProtectedRoute>
+                  <BuyNow />
+                </ProtectedRoute>
+              } />
+              <Route path="wishlist" element={
+                <ProtectedRoute>
+                  <Wishlist />
+                </ProtectedRoute>
+              } />
+              <Route path="orders" element={
+                <ProtectedRoute>
+                  <Orders />
+                </ProtectedRoute>
+              } />
+              <Route path="order-confirmation/:orderId" element={
+                <ProtectedRoute>
+                  <OrderConfirmation />
+                </ProtectedRoute>
+              } />
+              <Route path="track-order/:orderId" element={
+                <ProtectedRoute>
+                  <TrackOrder />
+                </ProtectedRoute>
+              } />
               <Route path="contact" element={<Contact />} />
-              <Route path="profile" element={<UserProfile />} />
+              <Route path="profile" element={
+                <ProtectedRoute>
+                  <UserProfile />
+                </ProtectedRoute>
+              } />
               <Route path="admin/products" element={
                 <AdminRoute>
                   <AdminProducts />

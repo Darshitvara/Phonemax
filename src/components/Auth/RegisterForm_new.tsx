@@ -47,9 +47,7 @@ const RegisterForm: React.FC = () => {
     }
 
     try {
-      await register({
-        email: formData.email,
-        password: formData.password,
+      await register(formData.email, formData.password, {
         firstName: formData.firstName,
         lastName: formData.lastName,
         phone: formData.phone

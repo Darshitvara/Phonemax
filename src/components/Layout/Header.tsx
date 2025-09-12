@@ -101,9 +101,12 @@ const Header: React.FC = () => {
             </Link>
 
             {/* User Menu */}
-            <div className="relative">
+            <div 
+              className="relative"
+              onMouseEnter={() => setIsUserMenuOpen(true)}
+              onMouseLeave={() => setIsUserMenuOpen(false)}
+            >
               <button
-                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                 className="flex items-center space-x-2 p-2 text-gray-700 hover:text-blue-600 transition-colors"
               >
                 <User className="w-6 h-6" />
