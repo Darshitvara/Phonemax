@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const { validateEmailAddress } = require('../utils/emailValidation');
 
 // Gene// @desc    Get current user
 // @route   GET /auth/me
@@ -78,6 +79,15 @@ exports.register = async (req, res) => {
     // Validate password strength
     if (password.length < 6) {
       return res.status(400).json({ message: 'Password must be at least 6 characters long' });
+    }
+
+    // Advanced email validation (disposable + MX records)
+    const emailCheck = await validateEmailAddress(email);
+    if (!emailCheck.valid) {
+      let message = 'Please enter a valid email address';
+      if (emailCheck.reason === 'disposable_domain') message = 'Disposable email addresses are not allowed';
+      if (emailCheck.reason === 'no_mx_records') message = 'Email domain does not accept mail';
+      return res.status(400).json({ message });
     }
 
     // Check if user already exists
@@ -221,5 +231,31 @@ exports.updateProfile = async (req, res) => {
   } catch (error) {
     console.error('Update profile error:', error);
     res.status(500).json({ message: 'Server error during profile update' });
+  }
+};
+
+// @desc    Validate email address (syntax, disposable, MX records)
+// @route   GET /auth/validate-email?email=foo@bar.com
+// @access  Public
+exports.validateEmail = async (req, res) => {
+  try {
+    const { email } = req.query;
+    if (!email) {
+      return res.status(400).json({ valid: false, message: 'Email is required' });
+    }
+
+    const result = await validateEmailAddress(email);
+
+    let message = 'Valid email';
+    if (!result.valid) {
+      if (result.reason === 'invalid_syntax') message = 'Invalid email format';
+      else if (result.reason === 'disposable_domain') message = 'Disposable email addresses are not allowed';
+      else if (result.reason === 'no_mx_records') message = 'Email domain does not accept mail';
+    }
+
+    return res.json({ valid: result.valid, reason: result.reason, message });
+  } catch (error) {
+    console.error('Email validation error:', error);
+    return res.status(500).json({ valid: false, message: 'Server error validating email' });
   }
 };

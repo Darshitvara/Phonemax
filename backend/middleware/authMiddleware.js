@@ -1,6 +1,11 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
+// Ensure the JWT secret used to VERIFY matches the one used to SIGN tokens
+// authController.generateToken uses process.env.JWT_SECRET || 'your-secret-key'
+// Keep the same default here to avoid mismatches during verification
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+
 const authMiddleware = async (req, res, next) => {
   try {
     // Get token from header
@@ -16,8 +21,8 @@ const authMiddleware = async (req, res, next) => {
 
     console.log('Token found:', token.substring(0, 20) + '...'); // Debug log
 
-    // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'hersecretkey');
+  // Verify token
+  const decoded = jwt.verify(token, JWT_SECRET);
     console.log('Token decoded:', decoded); // Debug log
 
     // Get user from database

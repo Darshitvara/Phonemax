@@ -23,6 +23,11 @@ router.get('/me', auth, authController.getMe);
 // @access  Private
 router.put('/profile', auth, authController.updateProfile);
 
+// @route   GET /auth/validate-email
+// @desc    Validate email address (syntax/disposable/MX)
+// @access  Public
+router.get('/validate-email', authController.validateEmail);
+
 // @route   POST /auth/make-admin
 // @desc    Promote user to admin (temporary for development)
 // @access  Private
