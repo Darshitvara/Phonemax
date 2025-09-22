@@ -84,11 +84,22 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       return { items: [], total: 0, itemCount: 0 };
     
     case 'LOAD_CART': {
-      // Normalize/compute stable item ids in case backend returns _id or missing id
-      const normalized = action.payload.map((item) => ({
-        ...item,
-        id: item.id || buildItemId(item.product as any, item.selectedColor, item.selectedStorage),
-      }));
+      // Normalize product.id (map from _id) and compute stable item ids
+      const normalized = action.payload.map((item) => {
+        const p: any = item.product;
+        const normProduct = p && typeof p === 'object'
+          ? {
+              ...p,
+              id: p.id || (p._id ? (typeof p._id === 'string' ? p._id : p._id.toString?.() ?? String(p._id)) : undefined),
+            }
+          : p;
+
+        return {
+          ...item,
+          product: normProduct,
+          id: item.id || buildItemId(normProduct as any, item.selectedColor, item.selectedStorage),
+        } as CartItem;
+      });
       const total = normalized.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
       const itemCount = normalized.reduce((sum, item) => sum + item.quantity, 0);
       
@@ -110,6 +121,16 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [state, dispatch] = useReducer(cartReducer, initialState);
   const { isAuthenticated } = useAuth();
   const { addNotification } = useNotifications();
+
+  const refreshCartFromServer = async () => {
+    try {
+      const cartData = await api.get('/cart');
+      dispatch({ type: 'LOAD_CART', payload: cartData.items || [] });
+    } catch (e) {
+      // Do not overwrite local state on failure; just log
+      console.error('Failed to refresh cart from server:', e);
+    }
+  };
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -143,8 +164,8 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const addToCart = (product: Product, quantity: number = 1, opts?: { selectedColor?: string; selectedStorage?: string }) => {
     if (isAuthenticated) {
       api.post('/cart', { productId: product.id, quantity, ...(opts || {}) })
-        .then(() => {
-          dispatch({ type: 'ADD_TO_CART', payload: { product, quantity, ...(opts || {}) } });
+        .then(async () => {
+          await refreshCartFromServer();
           addNotification({
             type: 'success',
             title: 'Added to Cart',
@@ -154,12 +175,10 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         })
         .catch(error => {
           console.error('Error adding to cart:', error);
-          // Fallback to local state
-          dispatch({ type: 'ADD_TO_CART', payload: { product, quantity, ...(opts || {}) } });
           addNotification({
-            type: 'success',
-            title: 'Added to Cart',
-            message: `${product.name} has been added to your cart successfully!`,
+            type: 'error',
+            title: 'Add to Cart Failed',
+            message: 'Could not add item to your cart. Please try again.',
             duration: 3000
           });
         });
@@ -181,8 +200,8 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     if (isAuthenticated) {
       api.delete(`/cart/${productId}`)
-        .then(() => {
-          dispatch({ type: 'REMOVE_FROM_CART', payload: { productId, itemId } });
+        .then(async () => {
+          await refreshCartFromServer();
           addNotification({
             type: 'info',
             title: 'Removed from Cart',
@@ -192,12 +211,10 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         })
         .catch(error => {
           console.error('Error removing from cart:', error);
-          // Fallback to local state
-          dispatch({ type: 'REMOVE_FROM_CART', payload: { productId, itemId } });
           addNotification({
-            type: 'info',
-            title: 'Removed from Cart',
-            message: `${productName} has been removed from your cart.`,
+            type: 'error',
+            title: 'Remove Failed',
+            message: 'Could not remove the item. Please try again.',
             duration: 3000
           });
         });
@@ -219,8 +236,8 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     if (isAuthenticated) {
       api.put(`/cart/${productId}`, { quantity })
-        .then(() => {
-          dispatch({ type: 'UPDATE_QUANTITY', payload: { productId, quantity, itemId } });
+        .then(async () => {
+          await refreshCartFromServer();
           if (quantity === 0) {
             addNotification({
               type: 'info',
@@ -239,23 +256,12 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         })
         .catch(error => {
           console.error('Error updating cart:', error);
-          // Fallback to local state
-          dispatch({ type: 'UPDATE_QUANTITY', payload: { productId, quantity, itemId } });
-          if (quantity === 0) {
-            addNotification({
-              type: 'info',
-              title: 'Removed from Cart',
-              message: `${productName} has been removed from your cart.`,
-              duration: 3000
-            });
-          } else {
-            addNotification({
-              type: 'success',
-              title: 'Quantity Updated',
-              message: `${productName} quantity updated to ${quantity}.`,
-              duration: 2000
-            });
-          }
+          addNotification({
+            type: 'error',
+            title: 'Update Failed',
+            message: 'Could not update the item quantity. Please try again.',
+            duration: 3000
+          });
         });
     } else {
       dispatch({ type: 'UPDATE_QUANTITY', payload: { productId, quantity, itemId } });
@@ -280,8 +286,8 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const clearCart = () => {
     if (isAuthenticated) {
       api.delete('/cart')
-        .then(() => {
-          dispatch({ type: 'CLEAR_CART' });
+        .then(async () => {
+          await refreshCartFromServer();
           addNotification({
             type: 'info',
             title: 'Cart Cleared',
@@ -291,12 +297,10 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         })
         .catch(error => {
           console.error('Error clearing cart:', error);
-          // Fallback to local state
-          dispatch({ type: 'CLEAR_CART' });
           addNotification({
-            type: 'info',
-            title: 'Cart Cleared',
-            message: 'All items have been removed from your cart.',
+            type: 'error',
+            title: 'Clear Cart Failed',
+            message: 'Could not clear your cart. Please try again.',
             duration: 3000
           });
         });

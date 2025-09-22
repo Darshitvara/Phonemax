@@ -1,5 +1,5 @@
 // Prefer Vite env for API base URL; fallback to common local backend port (5000)
-const API_BASE_URL = import.meta?.env?.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta?.env?.VITE_API_BASE_URL || 'https://phonemax.onrender.com';
 
 // Get auth token from localStorage
 const getAuthToken = (): string | null => {
@@ -31,6 +31,7 @@ class ApiClient {
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
         ...(token && { 'Authorization': `Bearer ${token}` }),
         ...options.headers,
       },
@@ -38,8 +39,35 @@ class ApiClient {
     };
 
     try {
-      const response = await fetch(url, config);
-      const data = await response.json();
+      let response = await fetch(url, config);
+
+      // Auto-retry once with '/api' prefix if baseURL likely missed it and we got a 404
+      const alreadyRetried = (options as any)._retriedWithApi === true;
+      if (
+        response.status === 404 &&
+        !alreadyRetried &&
+        !this.baseURL.includes('/api') &&
+        !endpoint.startsWith('/api')
+      ) {
+        const newBase = this.baseURL.replace(/\/$/, '') + '/api';
+        const retryUrl = `${newBase}${endpoint}`;
+        const retryOptions: RequestInit = { ...config, headers: { ...(config.headers || {}), 'X-Retry-With-Api': '1' } };
+        (retryOptions as any)._retriedWithApi = true;
+        response = await fetch(retryUrl, retryOptions);
+      }
+      const contentType = response.headers.get('content-type') || '';
+      let data: any = null;
+      if (contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        if (!response.ok) {
+          const snippet = text.slice(0, 200).replace(/\s+/g, ' ').trim();
+          throw new Error(`API ${response.status} ${response.statusText}: ${snippet}`);
+        }
+        // Unexpected non-JSON success; return raw text
+        return text;
+      }
 
       if (!response.ok) {
         // Surface backend error details if present
@@ -79,8 +107,12 @@ class ApiClient {
     });
   }
 
-  async delete(endpoint: string): Promise<any> {
-    return this.request(endpoint, { method: 'DELETE' });
+  async delete(endpoint: string, data?: any): Promise<any> {
+    const options: RequestInit = { method: 'DELETE' };
+    if (data !== undefined) {
+      (options as any).body = JSON.stringify(data);
+    }
+    return this.request(endpoint, options);
   }
 }
 
