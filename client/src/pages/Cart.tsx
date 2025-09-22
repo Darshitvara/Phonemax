@@ -7,11 +7,11 @@ import { useCart } from '../contexts/CartContext';
 const Cart: React.FC = () => {
   const { items, total, updateQuantity, removeFromCart, clearCart } = useCart();
 
-  const handleQuantityChange = (productId: string, newQuantity: number) => {
+  const handleQuantityChange = (productId: string, newQuantity: number, itemId?: string) => {
     if (newQuantity <= 0) {
-      removeFromCart(productId);
+      removeFromCart(productId, itemId);
     } else {
-      updateQuantity(productId, newQuantity);
+      updateQuantity(productId, newQuantity, itemId);
     }
   };
 
@@ -99,14 +99,14 @@ const Cart: React.FC = () => {
 
                   <div className="flex items-center space-x-3">
                     <button
-                      onClick={() => handleQuantityChange(item.product.id, item.quantity - 1)}
+                      onClick={() => handleQuantityChange(item.product.id, item.quantity - 1, item.id)}
                       className="p-1 rounded-full hover:bg-gray-100 transition-colors"
                     >
                       <Minus className="w-4 h-4" />
                     </button>
                     <span className="w-8 text-center font-semibold">{item.quantity}</span>
                     <button
-                      onClick={() => handleQuantityChange(item.product.id, item.quantity + 1)}
+                      onClick={() => handleQuantityChange(item.product.id, item.quantity + 1, item.id)}
                       className="p-1 rounded-full hover:bg-gray-100 transition-colors"
                     >
                       <Plus className="w-4 h-4" />
@@ -118,7 +118,7 @@ const Cart: React.FC = () => {
                       ${(item.product.price * item.quantity).toFixed(2)}
                     </div>
                     <button
-                      onClick={() => removeFromCart(item.product.id)}
+                      onClick={() => removeFromCart(item.product.id, item.id)}
                       className="text-red-600 hover:text-red-700 text-sm transition-colors"
                     >
                       Remove

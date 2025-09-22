@@ -5,38 +5,47 @@ import { useNotifications } from './NotificationContext';
 import { CartItem, CartState, Product } from '../types';
 
 interface CartContextType extends CartState {
-  addToCart: (product: Product, quantity?: number) => void;
-  removeFromCart: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  addToCart: (product: Product, quantity?: number, opts?: { selectedColor?: string; selectedStorage?: string }) => void;
+  removeFromCart: (productId: string, itemId?: string) => void;
+  updateQuantity: (productId: string, quantity: number, itemId?: string) => void;
   clearCart: () => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 type CartAction = 
-  | { type: 'ADD_TO_CART'; payload: { product: Product; quantity: number } }
-  | { type: 'REMOVE_FROM_CART'; payload: string }
-  | { type: 'UPDATE_QUANTITY'; payload: { productId: string; quantity: number } }
+  | { type: 'ADD_TO_CART'; payload: { product: Product; quantity: number; selectedColor?: string; selectedStorage?: string } }
+  | { type: 'REMOVE_FROM_CART'; payload: { productId: string; itemId?: string } }
+  | { type: 'UPDATE_QUANTITY'; payload: { productId: string; quantity: number; itemId?: string } }
   | { type: 'CLEAR_CART' }
   | { type: 'LOAD_CART'; payload: CartItem[] };
+
+// Build a stable cart item id based on product + variant selection
+const buildItemId = (product: Product, selectedColor?: string, selectedStorage?: string) => {
+  const pid = (product as any).id || (product as any)._id || '';
+  return `${pid}|${selectedColor || ''}|${selectedStorage || ''}`;
+};
 
 const cartReducer = (state: CartState, action: CartAction): CartState => {
   switch (action.type) {
     case 'ADD_TO_CART': {
-      const existingItem = state.items.find(item => item.product.id === action.payload.product.id);
+      const newItemId = buildItemId(action.payload.product, action.payload.selectedColor, action.payload.selectedStorage);
+      const existingItem = state.items.find(item => item.id === newItemId);
       
       let newItems: CartItem[];
       if (existingItem) {
         newItems = state.items.map(item =>
-          item.product.id === action.payload.product.id
+          item.id === newItemId
             ? { ...item, quantity: item.quantity + action.payload.quantity }
             : item
         );
       } else {
         newItems = [...state.items, {
-          id: Date.now().toString(),
+          id: newItemId,
           product: action.payload.product,
           quantity: action.payload.quantity,
+          selectedColor: action.payload.selectedColor,
+          selectedStorage: action.payload.selectedStorage,
         }];
       }
       
@@ -47,7 +56,9 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
     }
     
     case 'REMOVE_FROM_CART': {
-      const newItems = state.items.filter(item => item.product.id !== action.payload);
+      const newItems = state.items.filter(item =>
+        action.payload.itemId ? item.id !== action.payload.itemId : item.product.id !== action.payload.productId
+      );
       const total = newItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
       const itemCount = newItems.reduce((sum, item) => sum + item.quantity, 0);
       
@@ -55,11 +66,13 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
     }
     
     case 'UPDATE_QUANTITY': {
-      const newItems = state.items.map(item =>
-        item.product.id === action.payload.productId
-          ? { ...item, quantity: action.payload.quantity }
-          : item
-      ).filter(item => item.quantity > 0);
+      const newItems = state.items
+        .map(item => {
+          const match = action.payload.itemId ? (item.id === action.payload.itemId) : (item.product.id === action.payload.productId);
+          return match ? { ...item, quantity: action.payload.quantity } : item;
+        })
+        // Only filter out the item that was targeted if it hit zero; leave others intact
+        .filter(item => item.quantity > 0);
       
       const total = newItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
       const itemCount = newItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -71,10 +84,15 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       return { items: [], total: 0, itemCount: 0 };
     
     case 'LOAD_CART': {
-      const total = action.payload.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-      const itemCount = action.payload.reduce((sum, item) => sum + item.quantity, 0);
+      // Normalize/compute stable item ids in case backend returns _id or missing id
+      const normalized = action.payload.map((item) => ({
+        ...item,
+        id: item.id || buildItemId(item.product as any, item.selectedColor, item.selectedStorage),
+      }));
+      const total = normalized.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+      const itemCount = normalized.reduce((sum, item) => sum + item.quantity, 0);
       
-      return { items: action.payload, total, itemCount };
+      return { items: normalized, total, itemCount };
     }
     
     default:
@@ -122,11 +140,11 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.setItem('cart', JSON.stringify(state.items));
   }, [state.items]);
 
-  const addToCart = (product: Product, quantity: number = 1) => {
+  const addToCart = (product: Product, quantity: number = 1, opts?: { selectedColor?: string; selectedStorage?: string }) => {
     if (isAuthenticated) {
-      api.post('/cart', { productId: product.id, quantity })
+      api.post('/cart', { productId: product.id, quantity, ...(opts || {}) })
         .then(() => {
-          dispatch({ type: 'ADD_TO_CART', payload: { product, quantity } });
+          dispatch({ type: 'ADD_TO_CART', payload: { product, quantity, ...(opts || {}) } });
           addNotification({
             type: 'success',
             title: 'Added to Cart',
@@ -137,7 +155,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         .catch(error => {
           console.error('Error adding to cart:', error);
           // Fallback to local state
-          dispatch({ type: 'ADD_TO_CART', payload: { product, quantity } });
+          dispatch({ type: 'ADD_TO_CART', payload: { product, quantity, ...(opts || {}) } });
           addNotification({
             type: 'success',
             title: 'Added to Cart',
@@ -146,7 +164,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           });
         });
     } else {
-      dispatch({ type: 'ADD_TO_CART', payload: { product, quantity } });
+      dispatch({ type: 'ADD_TO_CART', payload: { product, quantity, ...(opts || {}) } });
       addNotification({
         type: 'success',
         title: 'Added to Cart',
@@ -156,15 +174,15 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const removeFromCart = (productId: string) => {
+  const removeFromCart = (productId: string, itemId?: string) => {
     // Get product name before removing for notification
-    const product = state.items.find(item => item.product.id === productId);
+    const product = state.items.find(item => item.product.id === productId || item.id === itemId);
     const productName = product?.product.name || 'Product';
 
     if (isAuthenticated) {
       api.delete(`/cart/${productId}`)
         .then(() => {
-          dispatch({ type: 'REMOVE_FROM_CART', payload: productId });
+          dispatch({ type: 'REMOVE_FROM_CART', payload: { productId, itemId } });
           addNotification({
             type: 'info',
             title: 'Removed from Cart',
@@ -175,7 +193,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         .catch(error => {
           console.error('Error removing from cart:', error);
           // Fallback to local state
-          dispatch({ type: 'REMOVE_FROM_CART', payload: productId });
+          dispatch({ type: 'REMOVE_FROM_CART', payload: { productId, itemId } });
           addNotification({
             type: 'info',
             title: 'Removed from Cart',
@@ -184,7 +202,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           });
         });
     } else {
-      dispatch({ type: 'REMOVE_FROM_CART', payload: productId });
+      dispatch({ type: 'REMOVE_FROM_CART', payload: { productId, itemId } });
       addNotification({
         type: 'info',
         title: 'Removed from Cart',
@@ -194,15 +212,15 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const updateQuantity = (productId: string, quantity: number) => {
+  const updateQuantity = (productId: string, quantity: number, itemId?: string) => {
     // Get product name for notification
-    const product = state.items.find(item => item.product.id === productId);
+    const product = state.items.find(item => item.product.id === productId || item.id === itemId);
     const productName = product?.product.name || 'Product';
 
     if (isAuthenticated) {
       api.put(`/cart/${productId}`, { quantity })
         .then(() => {
-          dispatch({ type: 'UPDATE_QUANTITY', payload: { productId, quantity } });
+          dispatch({ type: 'UPDATE_QUANTITY', payload: { productId, quantity, itemId } });
           if (quantity === 0) {
             addNotification({
               type: 'info',
@@ -222,7 +240,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         .catch(error => {
           console.error('Error updating cart:', error);
           // Fallback to local state
-          dispatch({ type: 'UPDATE_QUANTITY', payload: { productId, quantity } });
+          dispatch({ type: 'UPDATE_QUANTITY', payload: { productId, quantity, itemId } });
           if (quantity === 0) {
             addNotification({
               type: 'info',
@@ -240,7 +258,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           }
         });
     } else {
-      dispatch({ type: 'UPDATE_QUANTITY', payload: { productId, quantity } });
+      dispatch({ type: 'UPDATE_QUANTITY', payload: { productId, quantity, itemId } });
       if (quantity === 0) {
         addNotification({
           type: 'info',
