@@ -41,11 +41,11 @@ const Footer: React.FC = () => {
           <div>
             <h3 className="text-lg font-semibold mb-4">Support</h3>
             <ul className="space-y-2 text-sm">
-              <li><Link to="/support" className="text-gray-400 hover:text-white transition-colors">Customer Support</Link></li>
-              <li><Link to="/warranty" className="text-gray-400 hover:text-white transition-colors">Warranty</Link></li>
-              <li><Link to="/returns" className="text-gray-400 hover:text-white transition-colors">Returns</Link></li>
-              <li><Link to="/shipping" className="text-gray-400 hover:text-white transition-colors">Shipping Info</Link></li>
-              <li><Link to="/privacy" className="text-gray-400 hover:text-white transition-colors">Privacy Policy</Link></li>
+              <li><span className="text-gray-400 cursor-default">Customer Support</span></li>
+              <li><span className="text-gray-400 cursor-default">Warranty</span></li>
+              <li><span className="text-gray-400 cursor-default">Returns</span></li>
+              <li><span className="text-gray-400 cursor-default">Shipping Info</span></li>
+              <li><span className="text-gray-400 cursor-default">Privacy Policy</span></li>
             </ul>
           </div>
 
@@ -75,15 +75,15 @@ const Footer: React.FC = () => {
               © 2024 PhoneMax. All rights reserved.
             </p>
             <div className="flex space-x-6 mt-4 md:mt-0">
-              <Link to="/terms" className="text-gray-400 hover:text-white text-sm transition-colors">
+              <span className="text-gray-400 text-sm cursor-default">
                 Terms of Service
-              </Link>
-              <Link to="/privacy" className="text-gray-400 hover:text-white text-sm transition-colors">
+              </span>
+              <span className="text-gray-400 text-sm cursor-default">
                 Privacy Policy
-              </Link>
-              <Link to="/cookies" className="text-gray-400 hover:text-white text-sm transition-colors">
+              </span>
+              <span className="text-gray-400 text-sm cursor-default">
                 Cookie Policy
-              </Link>
+              </span>
             </div>
           </div>
         </div>
