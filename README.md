@@ -6,6 +6,10 @@
 [![MongoDB](https://img.shields.io/badge/MongoDB-6.x-green.svg)](https://www.mongodb.com/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-3.x-blue.svg)](https://tailwindcss.com/)
 
+## 🌐 Live Demo
+
+**🚀 [View Live Application](https://phonemax.darshitvara.me/)**
+
 ## 🚀 Project Overview
 
 PhoneMax is a full-stack e-commerce platform specialized in electronics, featuring a modern React frontend with TypeScript and a robust Node.js backend. The platform offers a seamless shopping experience with advanced features like user authentication, shopping cart management, wishlist functionality, and order tracking.
