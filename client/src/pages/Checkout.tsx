@@ -240,7 +240,7 @@ const Checkout: React.FC = () => {
                       <input
                         type="tel"
                         inputMode="numeric"
-                        pattern="^\\d{10}$"
+                        // pattern="^\\d{10}$"
                         {...register('phone')}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="10-digit phone"
