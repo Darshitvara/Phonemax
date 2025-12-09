@@ -44,7 +44,14 @@ app.use('/api/payments', paymentRoutes);
 app.get('/', (req, res) => {
   res.send('PhoneMax Backend API is running!');
 });
-
+// Health Check Route
+app.get('/api/health', (req, res) => {
+    res.json({
+        success: true,
+        message: 'PhoneMax backend is running',
+        timestamp: new Date().toISOString()
+    });
+});
 // Start the server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
